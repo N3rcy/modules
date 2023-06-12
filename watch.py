@@ -8,6 +8,9 @@
 # You CANNOT edit this file without direct permission from the author.
 # You can redistribute this file without any changes.
 
+# meta developer: @nercymods
+# scope: hikka_min 1.6.2
+
 from hikkatl.types import Message
 from telethon import events
 from .. import loader, utils
