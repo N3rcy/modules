@@ -58,6 +58,7 @@ class TwitchModule(loader.Module):
                 ydl.download([clip_url])
             await utils.answer(m, self.strings["clip_download_completed"])
             await m.client.send_file(m.chat_id, "clip.mp4")
+            await m.delete()
         except Exception as e:
             await utils.answer(m, self.strings["clip_download_failed"])
 
@@ -76,5 +77,6 @@ class TwitchModule(loader.Module):
                 ydl.download([video_url])
             await utils.answer(m, self.strings["video_download_completed"])
             await m.client.send_file(m.chat_id, "video.mp4")
+            await m.delete()
         except Exception as e:
             await utils.answer(m, self.strings["video_download_failed"])
