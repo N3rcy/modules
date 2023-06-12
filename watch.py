@@ -41,8 +41,9 @@ class WatcherModule(loader.Module):
         if message.text:
             text = message.text.lower()
             for word, response in self.watches.items():
-                if word in text:
+                if word.lower() in text:
                     await message.reply(response)
+
 
     @loader.command(ru_doc="Добавить отслеживание слова")
     async def addwatch(self, m: Message):
