@@ -12,6 +12,7 @@
 
 import os
 import requests
+import tempfile
 from hikkatl.types import Message
 from .. import loader, utils
 
@@ -39,7 +40,7 @@ class ClownModule(loader.Module):
         self.db = db
         self.client = client
 
-    @loader.command(ru_doc="сделать клоуном (реплай или указание никнейма)")
+    @loader.command(ru_doc="Сделать клавном <ник> или реплай")
     async def clown(self, m: Message):
         """Добавляет текст поверх видео"""
         reply_message = await m.get_reply_message()
@@ -53,37 +54,38 @@ class ClownModule(loader.Module):
             return
 
         video_url = "https://0x0.st/HcEt.mp4"
-        video_path = os.path.join(os.getcwd(), "clown_video.mp4")
-        output_path = os.path.join(os.getcwd(), "clown_output.mp4")
 
-        await utils.answer(m, self.strings_ru["processing"])
+        with tempfile.TemporaryDirectory() as temp_dir:
+            video_path = os.path.join(temp_dir, "clown_video.mp4")
+            output_path = os.path.join(temp_dir, "clown_output.mp4")
 
-        # Download the video
-        try:
-            response = requests.get(video_url)
-            with open(video_path, "wb") as f:
-                f.write(response.content)
-        except Exception:
-            await utils.answer(m, self.strings_ru["error_downloading"])
-            return
+            await utils.answer(m, self.strings_ru["processing"])
 
-        # Add text overlay on the video
-        command = f"ffmpeg -i {video_path} -vf \"drawtext=text='{username}':fontsize=50:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/4-150\" -c:a copy {output_path}"
-        os.system(command)
+            # Download the video
+            try:
+                response = requests.get(video_url)
+                with open(video_path, "wb") as f:
+                    f.write(response.content)
+            except Exception:
+                await utils.answer(m, self.strings_ru["error_downloading"])
+                return
 
-        await utils.answer(m, self.strings_ru["sending"])
+            # Add text overlay on the video
+            command = f"ffmpeg -i {video_path} -vf \"drawtext=text='{username}':fontsize=50:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/4-150\" -c:a copy {output_path}"
+            os.system(command)
 
-        # Send the modified video
-        try:
-            await self.client.send_file(m.chat_id, output_path, video_note=True)
-        except Exception:
-            await utils.answer(m, self.strings_ru["error_sending"])
+            await utils.answer(m, self.strings_ru["sending"])
 
-        # Delete the temporary files
-        os.remove(video_path)
-        os.remove(output_path)
-        await m.delete()
+            # Send the modified video
+            try:
+                await self.client.send_file(m.chat_id, output_path, video_note=True)
+            except Exception:
+                await utils.answer(m, self.strings_ru["error_sending"])
+
+            await m.delete()
+
+        # Delete the temporary files (automatically handled by TemporaryDirectory)
 
     async def get_username(self, user_id):
         user = await self.client.get_entity(user_id)
-        return user.username or user.first_name
+        return user.username if user.username else user.first_name
