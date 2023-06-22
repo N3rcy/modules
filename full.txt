@@ -4,3 +4,4 @@ clown
 GameInfo
 news
 progmusic
+whisper
