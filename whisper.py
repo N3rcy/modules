@@ -94,6 +94,21 @@ class WhisperMod(loader.Module):
             os.remove(file)
             os.remove("output_file.mp3")
 
+        elif file_extension == ".ogg":
+            await utils.answer(m, self.strings["recognition"])
+            input_file = file
+
+            audio = AudioSegment.from_file(input_file, format="ogg")
+            audio.export("output_file.mp3", format="mp3")
+
+            audio_file = open("output_file.mp3", "rb")
+            response = openai.Audio.transcribe("whisper-1", audio_file, prompt=self.config["prompt"], temperature = self.config["temperature"])
+            response_dict = response.to_dict()
+            transcription = response_dict['text']
+            await utils.answer(m, self.strings["recognized"].format(transcription=transcription))
+            os.remove(file)
+            os.remove("output_file.mp3")
+
         elif file_extension == ".mp4":
             await utils.answer(m, self.strings["recognition"])
             input_file = file
@@ -117,6 +132,28 @@ class WhisperMod(loader.Module):
             os.remove(file)
 
         elif file_extension == ".m4a":
+            await utils.answer(m, self.strings["recognition"])
+            input_file = file
+
+            audio_file = open(input_file, "rb")
+            response = openai.Audio.transcribe("whisper-1", audio_file, prompt=self.config["prompt"], temperature = self.config["temperature"])
+            response_dict = response.to_dict()
+            transcription = response_dict['text']
+            await utils.answer(m, self.strings["recognized"].format(transcription=transcription))
+            os.remove(file)
+
+        elif file_extension == ".wav":
+            await utils.answer(m, self.strings["recognition"])
+            input_file = file
+
+            audio_file = open(input_file, "rb")
+            response = openai.Audio.transcribe("whisper-1", audio_file, prompt=self.config["prompt"], temperature = self.config["temperature"])
+            response_dict = response.to_dict()
+            transcription = response_dict['text']
+            await utils.answer(m, self.strings["recognized"].format(transcription=transcription))
+            os.remove(file)
+
+        elif file_extension == ".mpeg":
             await utils.answer(m, self.strings["recognition"])
             input_file = file
 
