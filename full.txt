@@ -5,3 +5,4 @@ GameInfo
 news
 progmusic
 whisper
+github
