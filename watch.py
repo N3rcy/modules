@@ -41,18 +41,18 @@ class WatcherModule(loader.Module):
         if message.text:
             text = message.text.lower()
             for word, response in self.watches.items():
-                if word.lower() in text:
+                if word.lower() == text:                   
                     await message.reply(response)
 
 
     @loader.command(ru_doc="Добавить отслеживание слова")
     async def addwatch(self, m: Message):
         """Add a word to be watched"""
-        args = utils.get_args_split_by(m, ",")
+        args = utils.get_args_split_by(m, "$")
         if len(args) < 2:
             await utils.answer(
                 m,
-                "<emoji document_id=5978859389614821335>❌</emoji> Не указан один из аргументов! Пример правильной команды: `.addwatch \"первое слово\", \"ответ на него\"`"
+                "<emoji document_id=5978859389614821335>❌</emoji> Не указан один из аргументов! Пример правильной команды: `.addwatch \"первое слово\"$\"ответ на него\"`"
             )
             return
 
