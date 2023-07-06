@@ -75,17 +75,9 @@ class WhisperMod(loader.Module):
         """Transcribe speech from a voice/video message in reply"""
         rep = await m.get_reply_message()
 
-        if rep is None:
-            rep = m
-            down = await m.reply(self.strings["downloading"])
-            file = await rep.download_media()
-            file_extension = os.path.splitext(file)[1].lower()
-
-        else:
-            down = await rep.reply(self.strings["downloading"])
-            await m.delete()
-            file = await rep.download_media()
-            file_extension = os.path.splitext(file)[1].lower()
+        down = await rep.reply(self.strings["downloading"])
+        file = await rep.download_media()
+        file_extension = os.path.splitext(file)[1].lower()
 
 
         openai.api_key = self.config["api_key"]
@@ -146,4 +138,45 @@ class WhisperMod(loader.Module):
             if message.voice or message.video:
                 if not message.gif and not message.sticker and not message.photo:
                     rep = message
-                    await self.whisper(rep)
+                    await self.whisperwatch(rep)
+
+
+    async def whisperwatch(self, m: Message):
+        """Transcribe speech from a voice/video message in reply"""
+        rep = m
+
+        down = await rep.reply(self.strings["downloading"])
+        file = await rep.download_media()
+        file_extension = os.path.splitext(file)[1].lower()
+
+
+        openai.api_key = self.config["api_key"]
+
+        if file_extension == ".oga" or file_extension == ".ogg":
+            await self.client.edit_message(m.chat_id, down.id, self.strings["recognition"])
+            input_file = file
+
+            audio = AudioSegment.from_file(input_file, format="ogg")
+            audio.export("output_file.mp3", format="mp3")
+
+            audio_file = open("output_file.mp3", "rb")
+            response = openai.Audio.transcribe("whisper-1", audio_file, prompt=self.config["prompt"], temperature = self.config["temperature"])
+            response_dict = response.to_dict()
+            transcription = response_dict['text']
+            await self.client.edit_message(m.chat_id, down.id, self.strings["recognized"].format(transcription=transcription))
+            os.remove(file)
+            os.remove("output_file.mp3")
+
+        elif file_extension == ".mp3" or file_extension == "m4a" or file_extension == ".wav" or file_extension == ".mpeg" or file_extension == ".mp4":
+            await self.client.edit_message(m.chat_id, down.id, self.strings["recognition"])
+            input_file = file
+
+            audio_file = open(input_file, "rb")
+            response = openai.Audio.transcribe("whisper-1", audio_file, prompt=self.config["prompt"], temperature = self.config["temperature"])
+            response_dict = response.to_dict()
+            transcription = response_dict['text']
+            await self.client.edit_message(m.chat_id, down.id, self.strings["recognized"].format(transcription=transcription))
+            os.remove(file)
+
+        else:
+            await utils.answer(m, self.strings["audio_not_found"])
