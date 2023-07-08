@@ -6,3 +6,4 @@ news
 progmusic
 whisper
 github
+jikan
