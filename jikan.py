@@ -110,9 +110,9 @@ class JikanModule(loader.Module):
         await utils.answer(m, self.strings["result"].format(result=result))
 
 
-    @loader.command(ru_doc="Поиск манги по названию", en_doc="Search for by title")
+    @loader.command(ru_doc="Поиск манги по названию", en_doc="Search manga by title")
     async def smanga(self, m: Message):
-        """Search for by title"""
+        """Search manga by title"""
         query = utils.get_args_raw(m)
         if not query:
             await utils.answer(m, self.strings["expression_missing"])
