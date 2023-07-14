@@ -10,12 +10,14 @@
 
 # meta developer: @nercymods
 # scope: hikka_min 1.6.2
-__version__ = (1, 0, 0)
+__version__ = (1, 1)
 
 import requests
 from hikkatl.types import Message
 from .. import loader, utils
+from deep_translator import GoogleTranslator
 
+languages = ["ru", "en", "ja"] 
 
 @loader.tds
 class JikanModule(loader.Module):
@@ -38,21 +40,30 @@ class JikanModule(loader.Module):
         "error": "<b>Ошибка:</b> {error}"
     }
 
-    async def client_ready(self, client, db):
-        self.db = db
-        self.client = client
+    def __init__(self):
+        self.config = loader.ModuleConfig(
+            loader.ConfigValue(
+                "language",
+                "en",
+                lambda: "Language of output", 
+                validator=loader.validators.Choice(languages), 
+            ),
+        )
 
     @loader.command(ru_doc="Поиск аниме по названию", en_doc="Search for anime by title")
     async def sanime(self, m: Message):
         """Search for anime by title"""
         query = utils.get_args_raw(m)
+    
         if not query:
             await utils.answer(m, self.strings["expression_missing"])
             return
 
+        translator = GoogleTranslator(source='auto', target="en")
+        tquery = translator.translate(query)
         url = "https://api.jikan.moe/v4/anime"
         params = {
-            "q": query
+            "q": tquery
         }
         response = requests.get(url, params=params)
         data = response.json()
@@ -107,17 +118,24 @@ class JikanModule(loader.Module):
         if synopsis:
             result += f"<b>Synopsis:</b> {synopsis}"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
-
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Поиск манги по названию", en_doc="Search manga by title")
     async def smanga(self, m: Message):
         """Search manga by title"""
         query = utils.get_args_raw(m)
+        
         if not query:
             await utils.answer(m, self.strings["expression_missing"])
             return
 
+        translator = GoogleTranslator(source='auto', target="en")
+        tquery = translator.translate(query)
         url = "https://api.jikan.moe/v4/manga"
         params = {
             "q": query
@@ -172,16 +190,24 @@ class JikanModule(loader.Module):
         if synopsis:
             result += f"<b>Synopsis:</b> {synopsis}"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Поиск персонажа по имени", en_doc="Search character by name")
     async def scharacter(self, m: Message):
         """Search character by name"""
         query = utils.get_args_raw(m)
+        
         if not query:
             await utils.answer(m, self.strings["expression_missing"])
             return
 
+        translator = GoogleTranslator(source='auto', target="en")
+        tquery = translator.translate(query)
         url = "https://api.jikan.moe/v4/characters"
         params = {
             "q": query
@@ -211,7 +237,12 @@ class JikanModule(loader.Module):
         if about:
             result += f"<b>About:</b> {about}"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Получить рекомендации аниме", en_doc="Get anime recommendations")
     async def rсanime(self, m: Message):
@@ -238,7 +269,12 @@ class JikanModule(loader.Module):
             result += f"<b>User:</b> {username}\n" if username else ""
             result += "\n"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Получить рекомендации манги", en_doc="Get manga recommendations")
     async def rсmanga(self, m: Message):
@@ -265,7 +301,12 @@ class JikanModule(loader.Module):
             result += f"<b>User:</b> {username}\n" if username else ""
             result += "\n"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Случайное аниме", en_doc="Random anime")
     async def ranime(self, m: Message):
@@ -314,7 +355,12 @@ class JikanModule(loader.Module):
         if synopsis:
             result += f"<b>Synopsis:</b> {synopsis}"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
 
     @loader.command(ru_doc="Случайная манга", en_doc="Random manga")
     async def rmanga(self, m: Message):
@@ -363,4 +409,9 @@ class JikanModule(loader.Module):
         if synopsis:
             result += f"<b>Synopsis:</b> {synopsis}"
 
-        await utils.answer(m, self.strings["result"].format(result=result))
+        if self.config['language'] == "en":
+            await utils.answer(m, self.strings["result"].format(result=result))
+        else:
+            translator = GoogleTranslator(source='auto', target=self.config['language'])
+            translation = translator.translate(self.strings["result"].format(result=result))
+            await utils.answer(m, translation)
