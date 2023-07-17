@@ -7,3 +7,4 @@ progmusic
 whisper
 github
 jikan
+ocr
