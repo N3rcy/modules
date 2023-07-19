@@ -74,11 +74,11 @@ class WhisperMod(loader.Module):
     async def whisper(self, m: Message):
         """Transcribe speech from a voice/video message in reply"""
         rep = await m.get_reply_message()
+        await m.delete()
 
         down = await rep.reply(self.strings["downloading"])
         file = await rep.download_media()
         file_extension = os.path.splitext(file)[1].lower()
-
 
         openai.api_key = self.config["api_key"]
 
@@ -95,7 +95,7 @@ class WhisperMod(loader.Module):
             transcription = response_dict['text']
             await self.client.edit_message(m.chat_id, down.id, self.strings["recognized"].format(transcription=transcription))
             os.remove(file)
-            os.remove("output_file.mp3")
+            os.remove("output_file.mp3")            
 
         elif file_extension == ".mp3" or file_extension == "m4a" or file_extension == ".wav" or file_extension == ".mpeg" or file_extension == ".mp4":
             await self.client.edit_message(m.chat_id, down.id, self.strings["recognition"])
