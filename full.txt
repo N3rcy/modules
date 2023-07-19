@@ -8,3 +8,4 @@ whisper
 github
 jikan
 ocr
+emoji
