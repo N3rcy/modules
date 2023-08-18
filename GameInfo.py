@@ -75,17 +75,17 @@ class GameInfo(loader.Module):
     async def gameinfo(self, message: Message):
         """Fetch game information from RAWG"""
         if not (game_name := utils.get_args_raw(message)):
-            await utils.answer(message, self.strings_ru("game_not_found"))
+            await utils.answer(message, self.strings("game_not_found"))
             return
 
-        await utils.answer(message, self.strings_ru("fetching"))
+        await utils.answer(message, self.strings("fetching"))
 
         try:
             url = f"https://api.rawg.io/api/games?key={self.config['api_key']}&search={game_name}"
             response = await utils.run_sync(requests.get, url)
 
             if response.status_code == 404:
-                await utils.answer(message, self.strings_ru("game_not_found"))
+                await utils.answer(message, self.strings("game_not_found"))
                 return
 
             response.raise_for_status()
@@ -122,18 +122,18 @@ class GameInfo(loader.Module):
             screenshots_str = ", ".join(screenshots) if screenshots else "N/A"
 
             game_info_message = (
-                self.strings_ru("game") % game_name
+                self.strings("game") % game_name
                 + "\n"
-                + self.strings_ru("release") % released_date
+                + self.strings("release") % released_date
                 + "\n"
-                + self.strings_ru("rawg_rating") % rating
+                + self.strings("rawg_rating") % rating
                 + "\n"
-                + self.strings_ru("platforms") % platforms_str
+                + self.strings("platforms") % platforms_str
                 + "\n"
-                + self.strings_ru("genres") % genres_str
+                + self.strings("genres") % genres_str
                 + "\n"
-                + self.strings_ru("screenshots") % screenshots_str
+                + self.strings("screenshots") % screenshots_str
             )
             await utils.answer(message, game_info_message)
         except Exception:
-            await utils.answer(message, self.strings_ru("error_fetching"))
+            await utils.answer(message, self.strings("error_fetching"))

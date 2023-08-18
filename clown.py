@@ -80,7 +80,7 @@ class ClownModule(loader.Module):
                 else utils.get_args_raw(message)
             )
         ):
-            await utils.answer(message, self.strings_ru("video_not_found"))
+            await utils.answer(message, self.strings("video_not_found"))
             return
 
         video_url = "https://0x0.st/HcEt.mp4"
@@ -89,7 +89,7 @@ class ClownModule(loader.Module):
             video_path = os.path.join(temp_dir, "clown_video.mp4")
             output_path = os.path.join(temp_dir, "clown_output.mp4")
 
-            await utils.answer(message, self.strings_ru("processing"))
+            await utils.answer(message, self.strings("processing"))
 
             try:
                 response = await utils.run_sync(requests.get, video_url)
@@ -97,7 +97,7 @@ class ClownModule(loader.Module):
                 with open(video_path, "wb") as f:
                     f.write(response.content)
             except Exception:
-                await utils.answer(message, self.strings_ru("error_downloading"))
+                await utils.answer(message, self.strings("error_downloading"))
                 return
 
             subprocess.run(
@@ -112,7 +112,7 @@ class ClownModule(loader.Module):
                 capture_output=True,
             )
 
-            await utils.answer(message, self.strings_ru("sending"))
+            await utils.answer(message, self.strings("sending"))
 
             try:
                 await utils.answer_file(
@@ -121,7 +121,7 @@ class ClownModule(loader.Module):
                     video_note=True,
                 )
             except Exception:
-                await utils.answer(message, self.strings_ru("error_sending"))
+                await utils.answer(message, self.strings("error_sending"))
 
     async def _get_username(self, user_id: int) -> str:
         user = await self.client.get_entity(user_id, exp=0)
