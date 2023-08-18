@@ -41,24 +41,15 @@ class EmojiInfo(loader.Module):
             return
 
         try:
-            url = f"https://emojipedia.org/{emoji}/"
+            url = f"https://beta.emojipedia.org/{emoji}/"
             response = await utils.run_sync(requests.get, url)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, "html.parser")
 
-            emoji_name = soup.find("h1").get_text(strip=True)
-            emoji_description = soup.find(class_="description").get_text(strip=True)
-            emoji_codepoints = (
-                soup.find("h2", text="Codepoints")
-                .find_next("ul")
-                .find("li")
-                .get_text(strip=True)
-            )
+            emoji_name = soup.find('title').text
+            emoji_description = soup.find('div', {'class': 'HtmlContent_html-content-container___hgg7'}).text
+            emoji_codepoints = 'U+{:X}'.format(ord(emoji))
 
-            if "Emoji Meaning" in emoji_description:
-                emoji_description = emoji_description.split("Emoji Meaning", 1)[1]
-
-            emoji_description = emoji_description.split("Copy and Paste")[0].strip()
             await utils.answer(
                 message,
                 (
