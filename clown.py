@@ -100,18 +100,8 @@ class ClownModule(loader.Module):
                 await utils.answer(message, self.strings("error_downloading"))
                 return
 
-            subprocess.run(
-                [
-                    "ffmpeg",
-                    "-i",
-                    video_path,
-                    "-vf",
-                    f"\"drawtext=text='{shlex.quote(username)}':fontsize=50:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/4-150\"",
-                    f"-c:a copy {shlex.quote(output_path)}",
-                ],
-                capture_output=True,
-            )
-
+            command = f"ffmpeg -i {video_path} -vf \"drawtext=text='{username}':fontsize=50:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/4-150\" -c:a copy {output_path}"
+            os.system(command)
             await utils.answer(message, self.strings("sending"))
 
             try:
