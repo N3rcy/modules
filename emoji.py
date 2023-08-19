@@ -48,7 +48,7 @@ class EmojiInfo(loader.Module):
 
             emoji_name = soup.find('title').text
             emoji_description = soup.find('div', {'class': 'HtmlContent_html-content-container___hgg7'}).text
-            emoji_codepoints = 'U+{:X}'.format(ord(emoji))
+            emoji_codepoints = ' '.join(['U+{:X}'.format(ord(char)) for char in emoji])
 
             await utils.answer(
                 message,
@@ -58,6 +58,7 @@ class EmojiInfo(loader.Module):
                     f" {utils.escape_html(emoji_codepoints)}"
                 ),
             )
+
         except Exception as e:
             await utils.answer(
                 message, self.strings("error") + utils.escape_html(str(e))
