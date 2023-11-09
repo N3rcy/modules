@@ -21,11 +21,10 @@ import io
 class Top(loader.Module):
     """Module for viewing the top list in chat"""
     strings = {"name": "Top",
-    "top": "Top users by message count",
-    "topchat": "<emoji document_id=5323538339062628165>💬</emoji><b> Top users in</b>",
-    "msgcount": "Message count",
-    "loading": "<emoji document_id=5780543148782522693>🕒</emoji><b> Message counting has started, please wait, it may take a long time if there are a lot of messages in the chat</b>",
-    "onlychat": "<emoji document_id=5980953710157632545>❌</emoji><b> This command work only in chats</b>"
+        "top": "Top users by message count",
+        "topchat": "<emoji document_id=5323538339062628165>💬</emoji><b> Top users in</b>",
+        "msgcount": "Message count",
+        "loading": "<emoji document_id=5780543148782522693>🕒</emoji><b> Message counting has started, please wait, it may take a long time if there are a lot of messages in the chat</b>",
     }
 
     strings_ru = {
@@ -33,18 +32,12 @@ class Top(loader.Module):
         "topchat": "<emoji document_id=5323538339062628165>💬</emoji><b> Топ пользователей в</b>",
         "msgcount": "Количество сообщений",
         "loading": "<emoji document_id=5780543148782522693>🕒</emoji><b> Подсчет сообщений начался, пожалуйста подождите, это может занять много времени если в чате много сообщений</b>",
-        "onlychat": "<emoji document_id=5980953710157632545>❌</emoji><b> Эта команда работает только в чатах</b>"
     }
 
 
     @loader.command(ru_doc="Посмотреть топ в чате")
     async def top(self, m: Message):
         "View top in the chat"
-
-        from telethon.tl.types import User
-        if isinstance(m.chat, User):
-            await utils.answer(m, self.strings['onlychat'])
-            return
 
         await utils.answer(m, self.strings['loading'])
 
