@@ -91,7 +91,7 @@ class WhisperMod(loader.Module):
             loader.ConfigValue(
                 "api_key",
                 None,
-                lambda: "Api key for Whisper",
+                lambda: "Api key for Whisper (https://platform.openai.com/account/api-keys)",
                 validator=loader.validators.Hidden(),
             ),
             loader.ConfigValue(
