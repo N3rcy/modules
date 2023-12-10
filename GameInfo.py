@@ -24,6 +24,7 @@ class GameInfo(loader.Module):
         "name": "GameInfo",
         "game_not_found": "<b>❌ Game not found</b>",
         "fetching": "<b>🌐 Fetching game information...</b>",
+        "no_api": "<b>❌ Please insert your api key in config</b> (<code>.cfg GameInfo</code>)",
         "error_fetching": "<b>❌ Error fetching game information</b>",
         "game": "<b><emoji document_id=5467583879948803288>🎮</emoji>Name: </b>%s",
         "release": (
@@ -44,6 +45,7 @@ class GameInfo(loader.Module):
     strings_ru = {
         "game_not_found": "<b>❌ Игра не найдена</b>",
         "fetching": "<b>🌐 Получение информации об игре...</b>",
+        "no_api": "<b>❌ Пожалуйста укажите api-ключ в конфиге (<code>.cfg GameInfo</code>)",
         "error_fetching": "<b>❌ Ошибка при получении информации об игре</b>",
         "game": "<b><emoji document_id=5467583879948803288>🎮</emoji>Название: </b>%s",
         "release": (
@@ -66,7 +68,7 @@ class GameInfo(loader.Module):
             loader.ConfigValue(
                 "api_key",
                 None,
-                lambda: "Your API token from rawg.io",
+                lambda: "Your API token from https://rawg.io/apidocs (If you are from Russia use VPN)",
                 validator=loader.validators.Hidden(),
             )
         )
@@ -74,6 +76,10 @@ class GameInfo(loader.Module):
     @loader.command(ru_doc="Получить информацию об игре <название игры>")
     async def gameinfo(self, message: Message):
         """Fetch game information from RAWG"""
+        if self.config['api_key'] == None:
+            await utils.answer(message, self.strings('no_api'))
+            return
+
         if not (game_name := utils.get_args_raw(message)):
             await utils.answer(message, self.strings("game_not_found"))
             return

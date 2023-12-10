@@ -47,7 +47,7 @@ class EmojiInfo(loader.Module):
             soup = BeautifulSoup(response.content, "html.parser")
 
             emoji_name = soup.find('title').text
-            emoji_description = soup.find('div', {'class': 'HtmlContent_html-content-container___hgg7'}).text
+            emoji_description = soup.find('div', {'class': 'HtmlContent_html-content-container__Ow2Bk'}).text
             emoji_codepoints = ' '.join(['U+{:X}'.format(ord(char)) for char in emoji])
 
             await utils.answer(

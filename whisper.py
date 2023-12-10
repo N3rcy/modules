@@ -9,7 +9,7 @@
 
 # meta developer: @nercymods
 # scope: hikka_min 1.6.2
-# requires: pydub openai
+# requires: pydub openai==1.3.8 ffmpeg
 
 import os
 
@@ -41,7 +41,7 @@ class WhisperMod(loader.Module):
         "recognition": (
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Recognition...</b>"
         ),
-        "downloading": "Downloading, wait",
+        "downloading": "<b><emoji document_id=5310189005181036109>🐍</emoji>Downloading, wait</b>",
         "autowhisper_enabled": (
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Auto-whisper enabled"
             " in this chat.</b>"
@@ -50,6 +50,8 @@ class WhisperMod(loader.Module):
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Auto-whisper disabled"
             " in this chat.</b>"
         ),
+        "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Insert openai api-key in config</b> (<code>.cfg whispermod</code>)",
+        "invalid_key": "<b><emoji document_id=5980953710157632545>❌</emoji> Invalid openai api-key</b>",
     }
 
     strings_ru = {
@@ -80,6 +82,8 @@ class WhisperMod(loader.Module):
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Автораспознавание"
             " отключено в этом чате.</b>"
         ),
+        "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Укажите api-ключ в конфиге</b> (<code>.cfg whispermod</code>)",
+        "invalid_key": "<b><emoji document_id=5980953710157632545>❌</emoji> Неверный api-ключ</b>",
     }
 
     def __init__(self):
@@ -116,16 +120,16 @@ class WhisperMod(loader.Module):
     @loader.command(ru_doc="распознать речь из голосового/видео сообщения в реплае")
     async def whisper(self, message: Message):
         """Transcribe speech from a voice/video message in reply"""
+        if self.config['api_key'] is None:
+            await utils.answer(message, self.strings['no_api'])
+            return
+        
         rep = await message.get_reply_message()
-        await message.delete()
-
-        down = await rep.reply(self.strings["downloading"])
+        down = await utils.answer(message, self.strings["downloading"])
         file = await rep.download_media()
         file_extension = os.path.splitext(file)[1].lower()
 
-        openai.api_key = self.config["api_key"]
-
-        if file_extension == ".oga" or file_extension == ".ogg":
+        if file_extension in [".oga",".ogg"]:
             await self.client.edit_message(
                 message.chat_id, down.id, self.strings["recognition"]
             )
@@ -135,14 +139,23 @@ class WhisperMod(loader.Module):
             audio.export("output_file.mp3", format="mp3")
 
             audio_file = open("output_file.mp3", "rb")
-            response = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file,
-                prompt=self.config["prompt"],
-                temperature=self.config["temperature"],
-            )
-            response_dict = response.to_dict()
-            transcription = response_dict["text"]
+
+            client = openai.AsyncOpenAI(api_key=self.config['api_key'])
+            try:
+                response = await client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    prompt=self.config["prompt"],
+                    temperature=self.config["temperature"],
+                )
+            except openai.AuthenticationError:
+                await utils.answer(message, self.strings['invalid_key'])
+                return
+            except Exception as e:
+                await utils.answer(message, f"<b><emoji document_id=5980953710157632545>❌</emoji>Error: {e}</b>")
+                return
+
+            transcription = response.text
             await self.client.edit_message(
                 message.chat_id,
                 down.id,
@@ -151,33 +164,37 @@ class WhisperMod(loader.Module):
             os.remove(file)
             os.remove("output_file.mp3")
 
-        elif (
-            file_extension == ".mp3"
-            or file_extension == "m4a"
-            or file_extension == ".wav"
-            or file_extension == ".mpeg"
-            or file_extension == ".mp4"
-        ):
+        elif file_extension in [".mp3","m4a",".wav",".mpeg",".mp4"]:
             await self.client.edit_message(
                 message.chat_id, down.id, self.strings["recognition"]
             )
             input_file = file
 
             audio_file = open(input_file, "rb")
-            response = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file,
-                prompt=self.config["prompt"],
-                temperature=self.config["temperature"],
-            )
-            response_dict = response.to_dict()
-            transcription = response_dict["text"]
+
+            client = openai.AsyncOpenAI(api_key=self.config['api_key'])
+            try:
+                response = await client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    prompt=self.config["prompt"],
+                    temperature=self.config["temperature"],
+                )
+            except openai.AuthenticationError:
+                await utils.answer(message, self.strings['invalid_key'])
+                return
+            except Exception as e:
+                await utils.answer(message, f"<b><emoji document_id=5980953710157632545>❌</emoji>Error: {e}</b>")
+                return
+
+            transcription = response.text
             await self.client.edit_message(
                 message.chat_id,
                 down.id,
                 self.strings["recognized"].format(transcription=transcription),
             )
             os.remove(file)
+            os.remove("output_file.mp3")
 
         else:
             await utils.answer(message, self.strings["audio_not_found"])
@@ -216,17 +233,16 @@ class WhisperMod(loader.Module):
                     rep = message
                     await self.whisperwatch(rep)
 
-    async def whisperwatch(self, rep: Message):
+    async def whisperwatch(self, message: Message):
         """Transcribe speech from a voice/video message in reply"""
-        down = await rep.reply(self.strings["downloading"])
+        rep = message
+        down = await self.client.send_message(message.chat.id, message=self.strings["downloading"], reply_to=rep.id)
         file = await rep.download_media()
         file_extension = os.path.splitext(file)[1].lower()
 
-        openai.api_key = self.config["api_key"]
-
-        if file_extension == ".oga" or file_extension == ".ogg":
+        if file_extension in [".oga",".ogg"]:
             await self.client.edit_message(
-                rep.chat_id, down.id, self.strings["recognition"]
+                message.chat_id, down.id, self.strings["recognition"]
             )
             input_file = file
 
@@ -234,49 +250,62 @@ class WhisperMod(loader.Module):
             audio.export("output_file.mp3", format="mp3")
 
             audio_file = open("output_file.mp3", "rb")
-            response = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file,
-                prompt=self.config["prompt"],
-                temperature=self.config["temperature"],
-            )
-            response_dict = response.to_dict()
-            transcription = response_dict["text"]
+
+            client = openai.AsyncOpenAI(api_key=self.config['api_key'])
+            try:
+                response = await client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    prompt=self.config["prompt"],
+                    temperature=self.config["temperature"],
+                )
+            except openai.AuthenticationError:
+                await utils.answer(message, self.strings['invalid_key'])
+                return
+            except Exception as e:
+                await utils.answer(message, f"<b><emoji document_id=5980953710157632545>❌</emoji>Error: {e}</b>")
+                return
+
+            transcription = response.text
             await self.client.edit_message(
-                rep.chat_id,
+                message.chat_id,
                 down.id,
                 self.strings["recognized"].format(transcription=transcription),
             )
             os.remove(file)
             os.remove("output_file.mp3")
 
-        elif (
-            file_extension == ".mp3"
-            or file_extension == "m4a"
-            or file_extension == ".wav"
-            or file_extension == ".mpeg"
-            or file_extension == ".mp4"
-        ):
+        elif file_extension in [".mp3","m4a",".wav",".mpeg",".mp4"]:
             await self.client.edit_message(
-                rep.chat_id, down.id, self.strings["recognition"]
+                message.chat_id, down.id, self.strings["recognition"]
             )
             input_file = file
 
             audio_file = open(input_file, "rb")
-            response = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file,
-                prompt=self.config["prompt"],
-                temperature=self.config["temperature"],
-            )
-            response_dict = response.to_dict()
-            transcription = response_dict["text"]
+            
+            client = openai.AsyncOpenAI(api_key=self.config['api_key'])
+            try:
+                response = await client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    prompt=self.config["prompt"],
+                    temperature=self.config["temperature"],
+                )
+            except openai.AuthenticationError:
+                await utils.answer(message, self.strings['invalid_key'])
+                return
+            except Exception as e:
+                await utils.answer(message, f"<b><emoji document_id=5980953710157632545>❌</emoji>Error: {e}</b>")
+                return
+
+            transcription = response.text
             await self.client.edit_message(
-                rep.chat_id,
+                message.chat_id,
                 down.id,
                 self.strings["recognized"].format(transcription=transcription),
             )
             os.remove(file)
+            os.remove("output_file.mp3")
 
         else:
-            await utils.answer(rep, self.strings["audio_not_found"])
+            return
