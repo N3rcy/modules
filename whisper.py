@@ -196,7 +196,6 @@ class WhisperMod(loader.Module):
                 self.strings["recognized"].format(transcription=transcription),
             )
             os.remove(file)
-            os.remove("output_file.mp3")
         else:
             await utils.answer(message, self.strings["audio_not_found"])
 
@@ -310,6 +309,5 @@ class WhisperMod(loader.Module):
                 self.strings["recognized"].format(transcription=transcription),
             )
             os.remove(file)
-            os.remove("output_file.mp3")
         else:
             return
