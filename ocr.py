@@ -39,6 +39,10 @@ class OCRMod(loader.Module):
         "recognition": (
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Recognition...</b>"
         ),
+        "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Please insert api-key in config</b> (<code>.cfg ocrmod</code>)",
+        "config_key": "Get key here: https://ocr.space/ocrapi/freekey",
+        "language": ("🌐 Recognition language, available can be viewed here:"
+                     "https://ocr.space/OCRAPI#:~:text=faster%20upload%20speeds.-,language,-%5BOptional%5D%0AArabic"),
     }
 
     strings_ru = {
@@ -56,6 +60,10 @@ class OCRMod(loader.Module):
         "recognition": (
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Распознаю...</b>"
         ),
+        "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Пожалуйста, вставьте api-key в конфиг</b> (<code>.cfg ocrmod</code>)",
+        "config_key": "Получить ключ можно здесь: https://ocr.space/ocrapi/freekey",
+        "language": ("🌐 Язык распознавания, доступные можно посмотреть здесь:"
+                     "https://ocr.space/OCRAPI#:~:text=faster%20upload%20speeds.-,language,-%5BOptional%5D%0AArabic"),
     }
 
     def __init__(self):
@@ -63,13 +71,13 @@ class OCRMod(loader.Module):
             loader.ConfigValue(
                 "api_key",
                 None,
-                lambda: "api key for ocr.space",
+                lambda: self.strings['config_key'],
                 validator=loader.validators.Hidden(),
             ),
             loader.ConfigValue(
                 "language",
                 "eng",
-                lambda: "language on the photo",
+                lambda: self.strings['language'],
             ),
         )
 
@@ -102,6 +110,10 @@ class OCRMod(loader.Module):
             reply_msg.media, MessageMediaPhoto
         ):
             await utils.answer(message, self.strings("file_not_found"))
+            return
+
+        if self.config['api_key'] == None:
+            await utils.answer(message, self.strings['no_api'])
             return
 
         try:
