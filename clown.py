@@ -83,7 +83,7 @@ class ClownModule(loader.Module):
             await utils.answer(message, self.strings("video_not_found"))
             return
 
-        video_url = "https://0x0.st/HcEt.mp4"
+        video_url = "https://github.com/N3rcy/modules/raw/refs/heads/main/clown_asset.mp4"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             video_path = os.path.join(temp_dir, "clown_video.mp4")
