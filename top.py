@@ -65,30 +65,24 @@ class Top(loader.Module):
 
             sorted_message_count = sorted(message_count.items(), key=lambda item: item[1], reverse=True)
 
-            # Limit to top 20 users
             top_users = sorted_message_count[:20]
 
-            # Prepare data for plotting
-            usernames = [users_dict[user_id] for user_id, _ in top_users]
+            usernames = [users_dict[user_id] or "Unknown" for user_id, _ in top_users]
             counts = [count for _, count in top_users]
 
-            # Plot the data
             plt.figure(figsize=(10, 5))
             plt.barh(usernames, counts, color='skyblue')
             plt.xlabel(self.strings['msgcount'])
             plt.title(self.strings['top'])
             plt.gca().invert_yaxis()
 
-            # Save the plot to a BytesIO object
             buf = io.BytesIO()
             plt.savefig(buf, format='png')
             buf.seek(0)
 
-            # Create a mini top for the caption
             caption = f"{self.strings['topchat']} <b>{m.chat.title}:</b>\n"
             caption += "\n".join([f"{i+1}. {user} - {count}" for i, (user, count) in enumerate(zip(usernames, counts))])
 
-            # Send the image
             await utils.answer_file(m, buf, caption, force_document=False)
         else:
             me = await client.get_me()
@@ -106,30 +100,24 @@ class Top(loader.Module):
             message_counts = [(me.first_name, my_message_count), (target.first_name, their_message_count)]
             sorted_message_counts = sorted(message_counts, key=lambda item: item[1], reverse=True)
             
-            # Prepare data for plotting
             usernames = [user for user, _ in sorted_message_counts]
             counts = [count for _, count in sorted_message_counts]
 
-            # Plot the data
             plt.figure(figsize=(10, 5))
             plt.barh(usernames, counts, color='skyblue')
             plt.xlabel(self.strings['msgcount'])
             plt.title(self.strings['top'])
             plt.gca().invert_yaxis()
 
-            # Save the plot to a BytesIO object
             buf = io.BytesIO()
             import warnings
-            # Ignore warning with fonts
             warnings.filterwarnings("ignore")
             plt.savefig(buf, format='png')
             buf.seek(0)
 
-            # Create a mini top for the caption
             caption = f"{self.strings['topchat']} <b>{target.first_name}:</b>\n"
             caption += "\n".join([f'"{user}" - {count}' for user, count in zip(usernames, counts)])
 
-            # Send the image
             await utils.answer_file(m, buf, caption, force_document=False)
 
 
