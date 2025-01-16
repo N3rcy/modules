@@ -41,7 +41,7 @@ class EmojiInfo(loader.Module):
             return
 
         try:
-            url = f"https://beta.emojipedia.org/{emoji}/"
+            url = f"https://emojipedia.org/{emoji}/"
             response = await utils.run_sync(requests.get, url)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, "html.parser")
