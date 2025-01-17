@@ -17,6 +17,9 @@ import openai
 from hikkatl.tl.types import Message
 from pydub import AudioSegment
 
+import requests
+import base64
+
 from .. import loader, utils
 
 
@@ -52,6 +55,19 @@ class WhisperMod(loader.Module):
         ),
         "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Insert openai api-key in config</b> (<code>.cfg whispermod</code>)",
         "invalid_key": "<b><emoji document_id=5980953710157632545>❌</emoji> Invalid openai api-key</b>",
+        "hf_instructions": (
+        "<emoji document_id=5238154170174820439>👩‍🎓</emoji> <b>How to get hugging face api token:</b>\n"
+        "<b>&gt; Open Hugging Face and sign in.</b> <emoji document_id=4904848288345228262>👤</emoji> <b>\n"
+        "&gt; Go to Settings → Access Tokens: </b><a href=\"https://huggingface.co/settings/tokens\"><b>https://huggingface.co/settings/tokens</b></a><b>.</b> <emoji document_id=5222142557865128918>⚙️</emoji> <b>\n"
+        "&gt; Click New Token.</b> <emoji document_id=5431757929940273672>➕</emoji> <b>\n"
+        "&gt; Select permission: \"make calls to the serverless Inference API\".</b> <emoji document_id=5253952855185829086>⚙️</emoji> <b>\n"
+        "&gt; Click Create Token.</b> <emoji document_id=5253652327734192243>➕</emoji> <b>\n"
+        "&gt; Copy the token and paste it into the config.</b> <emoji document_id=4916036072560919511>✅</emoji>"
+        ),
+        "hf_token_missing": (
+            "<b><emoji document_id=5980953710157632545>❌</emoji>Missing hugging face api token</b>"
+            " (<code>.cfg whispermod</code>)"
+        )
     }
 
     strings_ru = {
@@ -82,8 +98,26 @@ class WhisperMod(loader.Module):
             "<b><emoji document_id=5307937750828194743>🫥</emoji>Автораспознавание"
             " отключено в этом чате.</b>"
         ),
-        "no_api": "<b><emoji document_id=5980953710157632545>❌</emoji> Укажите api-ключ в конфиге</b> (<code>.cfg whispermod</code>)",
-        "invalid_key": "<b><emoji document_id=5980953710157632545>❌</emoji> Неверный api-ключ</b>",
+        "no_api": (
+            "<b><emoji document_id=5980953710157632545>❌</emoji> Укажите api-ключ в конфиге</b>"
+            " (<code>.cfg whispermod</code>)"
+        ),
+        "invalid_key": (
+            "<b><emoji document_id=5980953710157632545>❌</emoji> Неверный api-ключ</b>"
+        ),
+        "hf_instructions": (
+            "<emoji document_id=5238154170174820439>👩‍🎓</emoji> <b>Как получить api-токен hugging face:</b>\n"
+            "<b>&gt; Откройте Hugging Face и войдите в аккаунт. </b><emoji document_id=4904848288345228262>👤</emoji><b>\n"
+            "&gt; Перейдите в Settings → Access Tokens: </b><a href=\"https://huggingface.co/settings/tokens\"><b>https://huggingface.co/settings/tokens</b></a><b>. </b><emoji document_id=5222142557865128918>⚙️</emoji><b>\n"
+            "&gt; Нажмите New Token. </b><emoji document_id=5431757929940273672>➕</emoji><b>\n"
+            "&gt; Выберите разрешение: \"make calls to the serverless Inference API\". </b><emoji document_id=5253952855185829086>⚙️</emoji><b>\n"
+            "&gt; Нажмите Create Token. </b><emoji document_id=5253652327734192243>➕</emoji><b>\n"
+            "&gt; Скопируйте токен и вставьте его в конфиг. </b><emoji document_id=4916036072560919511>✅</emoji>"
+        ),
+        "hf_token_missing": (
+            "<b><emoji document_id=5980953710157632545>❌</emoji>Отсутствует api-токен hugging face</b>"
+            " (<code>.cfg whispermod</code>)"
+        )
     }
 
     def __init__(self):
@@ -115,11 +149,17 @@ class WhisperMod(loader.Module):
                 ),
                 validator=loader.validators.String(),
             ),
+            loader.ConfigValue(
+                "hf_api_key",
+                None,
+                lambda: "Api key for hugging face (look .hfguide)",
+                validator=loader.validators.Hidden(),
+            ),
         )
 
-    @loader.command(ru_doc="распознать речь из голосового/видео сообщения в реплае")
+    @loader.command(ru_doc="распознать речь из голосового/видео сообщения в реплае, используя openai api")
     async def whisper(self, message: Message):
-        """Transcribe speech from a voice/video message in reply"""
+        """Transcribe speech from a voice/video message in reply using openai api"""
         if self.config["api_key"] is None:
             await utils.answer(message, self.strings["no_api"])
             return
@@ -311,3 +351,85 @@ class WhisperMod(loader.Module):
             os.remove(file)
         else:
             return
+
+    @loader.command(ru_doc="распознать речь из голосового/видео сообщения в реплае, используя hugging face api")
+    async def hfwhisper(self, m: Message):
+        """Transcribe speech from a voice/video message in reply using hugging face api"""
+        
+        if self.config["hf_api_key"] is None:
+            await utils.answer(m, self.strings["hf_token_missing"])
+            return
+        
+        rep = await m.get_reply_message()
+        await utils.answer(m, self.strings["downloading"])
+        file = await rep.download_media()
+        file_extension = os.path.splitext(file)[1].lower()
+        if file_extension in ['.ogg', '.oga']:
+            try:
+                await utils.answer(m, self.strings["recognition"])
+                with open(file, "rb") as f:
+                    audio_bytes = f.read()
+                
+                audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+                
+                payload = {
+                    "inputs": audio_b64,
+                }
+                
+                response = await utils.run_sync(
+                    requests.post,
+                    url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                    headers = {"Authorization": f"Bearer {self.config['hf_api_key']}",
+                    "x-use-cache": "false",       
+                    "x-wait-for-model": "true",   
+                    "Content-Type": "application/json"  
+                    },
+                    json = payload,
+                )
+                output = response.json()
+                os.remove(file)
+                return await utils.answer(m, self.strings["recognized"].format(transcription=output['text']))
+            
+            except Exception as e:
+                import logging
+                logging.getLogger().error(e)
+                return await utils.answer(m, self.strings["error"])
+        elif file_extension in [".mp3", "m4a", ".wav", ".mpeg", ".mp4"]:
+            try:
+                await utils.answer(m, self.strings["recognition"])
+                audio = AudioSegment.from_file(file, format=file_extension.replace('.', ''))
+                audio.export("output_file.mp3", format="mp3")
+                with open("output_file.mp3", "rb") as f:
+                    audio_bytes = f.read()
+                
+                audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+                
+                payload = {
+                    "inputs": audio_b64,
+                    "language": "ru",
+                    "attention_mask": [1] * len(audio_bytes)  
+                }
+                
+                response = await utils.run_sync(
+                    requests.post,
+                    url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                    headers = {"Authorization": f"Bearer {self.config['hf_api_key']}",
+                    "x-use-cache": "false",       
+                    "x-wait-for-model": "true",   
+                    "Content-Type": "application/json"  
+                    },
+                    json = payload,
+                )
+                output = response.json()
+                os.remove("output_file.mp3")
+                os.remove(file)
+                return await utils.answer(m, self.strings["recognized"].format(transcription=output['text']))
+            
+            except Exception as e:
+                import logging
+                logging.getLogger().error(e)
+                return await utils.answer(m, self.strings["error"])
+    
+    @loader.command(ru_doc="гайд как получить hugging face токен", en_doc="guide how to get hugging face token")
+    async def hfguide(self, m: Message):
+        await utils.answer(m, self.strings['hf_instructions'])
