@@ -429,6 +429,103 @@ class WhisperMod(loader.Module):
                 import logging
                 logging.getLogger().error(e)
                 return await utils.answer(m, self.strings["error"])
+            
+    @loader.command(
+        ru_doc=(
+            "включить/выключить автораспознавание через Hugging Face API в текущем чате"
+        )
+    )
+    async def hfautowhspr(self, message: Message):
+        """Enable/disable auto-speech recognition using Hugging Face API"""
+        chat_id = str(message.chat_id)
+        current_state = self.get("hfautowhspr", {})
+        enabled = current_state.get(chat_id, False)
+
+        if enabled:
+            current_state.pop(chat_id, None)
+            status_message = self.strings["autowhisper_disabled"]
+        else:
+            current_state[chat_id] = True
+            status_message = self.strings["autowhisper_enabled"]
+        self.set("hfautowhspr", current_state)
+        await utils.answer(message, status_message)
+
+    @loader.watcher(only_media=True)
+    async def hfautowhisper_watcher(self, message: Message):
+        """Watcher for Hugging Face auto-transcription"""
+        chat_id = str(message.chat_id)
+        current_state = self.get("hfautowhspr", {})
+
+        if current_state.get(chat_id, False):
+            if message.voice or message.video:
+                if not message.gif and not message.sticker and not message.photo:
+                    rep = message
+                    await self.hfwhisperwatch(rep)
+
+    async def hfwhisperwatch(self, message: Message):
+        """Auto-transcribe using Hugging Face API"""
+        if self.config["hf_api_key"] is None:
+            return
+
+        rep = message
+        down = await self.client.send_message(
+            message.chat.id, self.strings["downloading"], reply_to=rep.id
+        )
+        file = await rep.download_media()
+        file_extension = os.path.splitext(file)[1].lower()
+
+        try:
+            await self.client.edit_message(
+                message.chat_id, down.id, self.strings["recognition"]
+            )
+
+            if file_extension in ['.ogg', '.oga']:
+                with open(file, "rb") as f:
+                    audio_bytes = f.read()
+            else:
+                audio = AudioSegment.from_file(file, format=file_extension.replace('.', ''))
+                audio.export("temp_audio.mp3", format="mp3")
+                with open("temp_audio.mp3", "rb") as f:
+                    audio_bytes = f.read()
+                os.remove("temp_audio.mp3")
+
+            audio_b64 = base64.b64encode(audio_bytes).decode('utf-8')
+            
+            response = await utils.run_sync(
+                requests.post,
+                url="https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                headers={
+                    "Authorization": f"Bearer {self.config['hf_api_key']}",
+                    "x-use-cache": "false",
+                    "x-wait-for-model": "true",
+                    "Content-Type": "application/json"
+                },
+                json={"inputs": audio_b64},
+            )
+
+            if response.status_code != 200:
+                raise Exception(f"API Error: {response.text}")
+
+            output = response.json()
+            text = output.get('text', '')
+            
+            await self.client.edit_message(
+                message.chat_id,
+                down.id,
+                self.strings["recognized"].format(transcription=text),
+            )
+
+        except Exception as e:
+            await self.client.edit_message(
+                message.chat_id,
+                down.id,
+                f"<b>❌ Error: {str(e)}</b>"
+            )
+        finally:
+            if os.path.exists(file):
+                os.remove(file)
+            if os.path.exists("temp_audio.mp3"):
+                os.remove("temp_audio.mp3")
     
     @loader.command(ru_doc="гайд как получить hugging face токен", en_doc="guide how to get hugging face token")
     async def hfguide(self, m: Message):
