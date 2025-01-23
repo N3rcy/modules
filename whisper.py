@@ -155,6 +155,18 @@ class WhisperMod(loader.Module):
                 lambda: "Api key for hugging face (look .hfguide)",
                 validator=loader.validators.Hidden(),
             ),
+            loader.ConfigValue(
+            "auto_voice",
+                True,
+                lambda: "Enable auto-recognition for voice messages",
+                validator=loader.validators.Boolean()
+            ),
+            loader.ConfigValue(
+                "auto_video",
+                True,
+                lambda: "Enable auto-recognition for video messages",
+                validator=loader.validators.Boolean()
+            ),
         )
 
     @loader.command(ru_doc="распознать речь из голосового/видео сообщения в реплае, используя openai api")
@@ -267,7 +279,7 @@ class WhisperMod(loader.Module):
         current_state = self.get("autowhspr", {})
 
         if current_state.get(chat_id, False):
-            if message.voice or message.video:
+            if (message.voice and self.config["auto_voice"]) or (message.video and self.config["auto_video"]):
                 if not message.gif and not message.sticker and not message.photo:
                     rep = message
                     await self.whisperwatch(rep)
@@ -457,7 +469,7 @@ class WhisperMod(loader.Module):
         current_state = self.get("hfautowhspr", {})
 
         if current_state.get(chat_id, False):
-            if message.voice or message.video:
+            if (message.voice and self.config["auto_voice"]) or (message.video and self.config["auto_video"]):
                 if not message.gif and not message.sticker and not message.photo:
                     rep = message
                     await self.hfwhisperwatch(rep)
