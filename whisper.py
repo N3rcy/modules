@@ -390,7 +390,7 @@ class WhisperMod(loader.Module):
                 
                 response = await utils.run_sync(
                     requests.post,
-                    url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                    url = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo",
                     headers = {"Authorization": f"Bearer {self.config['hf_api_key']}",
                     "x-use-cache": "false",       
                     "x-wait-for-model": "true",   
@@ -424,7 +424,7 @@ class WhisperMod(loader.Module):
                 
                 response = await utils.run_sync(
                     requests.post,
-                    url = "https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                    url = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo",
                     headers = {"Authorization": f"Bearer {self.config['hf_api_key']}",
                     "x-use-cache": "false",       
                     "x-wait-for-model": "true",   
@@ -505,7 +505,7 @@ class WhisperMod(loader.Module):
             
             response = await utils.run_sync(
                 requests.post,
-                url="https://api-inference.huggingface.co/models/openai/whisper-large-v3-turbo",
+                url = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo",
                 headers={
                     "Authorization": f"Bearer {self.config['hf_api_key']}",
                     "x-use-cache": "false",
